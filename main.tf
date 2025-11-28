@@ -127,15 +127,41 @@ variable "tenant_name" {
 ###########################################
 # Resources
 ###########################################
-# Basic EC2 instance for testing connectivity
-resource "aws_instance" "test" {
+# Odoo EC2 instance with cloud-init configuration
+resource "aws_instance" "odoo" {
   ami                    = var.ami_id
-  instance_type          = "t3.micro" # free-tier eligible (if supported in sa-east-1)
+  instance_type          = "t3.micro"
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.default.id]
+  key_name               = var.ssh_key_name
+
+  # Cloud-init configuration with variable substitution
+  user_data = templatefile("${path.module}/cloud-init.yml", {
+    # Git Configuration
+    github_repo   = var.github_repo
+    github_branch = var.github_branch
+
+    # Odoo Configuration
+    odoo_admin_password = var.odoo_admin_password
+    odoo_db_password    = var.odoo_db_password
+    odoo_jwt_secret     = var.odoo_jwt_secret
+
+    # Domain Configuration (combine subdomain + domain)
+    domain_name = var.subdomain != "" ? "${var.subdomain}.${var.domain_name}" : var.domain_name
+
+    # Orbit Integration
+    backend_url  = var.backend_url
+    frontend_url = var.frontend_url
+
+    # Tenant Information
+    tenant_name = var.tenant_name
+  })
 
   tags = {
-    Name = "terraform-test"
+    Name        = "${var.tenant_name}-odoo"
+    Tenant      = var.tenant_name
+    Subdomain   = var.subdomain
+    ManagedBy   = "Terraform"
   }
 }
 
@@ -143,6 +169,16 @@ resource "aws_instance" "test" {
 # Outputs
 ###########################################
 output "public_ip" {
-  description = "EC2 public IP"
-  value       = aws_instance.test.public_ip
+  description = "Odoo server public IP"
+  value       = aws_instance.odoo.public_ip
+}
+
+output "instance_id" {
+  description = "EC2 instance ID"
+  value       = aws_instance.odoo.id
+}
+
+output "full_domain" {
+  description = "Full domain name for this deployment"
+  value       = var.subdomain != "" ? "${var.subdomain}.${var.domain_name}" : var.domain_name
 }
