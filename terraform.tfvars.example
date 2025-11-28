@@ -1,0 +1,45 @@
+# ============================================
+# Terraform Variables Example
+# ============================================
+# Copy this file to terraform.tfvars and fill in your values
+# DO NOT commit terraform.tfvars to Git!
+
+# DigitalOcean Configuration
+do_token = "your-digitalocean-api-token"
+
+# Environment
+environment = "production" # or "staging", "dev"
+
+# Server Configuration
+region        = "sfo3"           # San Francisco 3
+droplet_size  = "s-2vcpu-4gb"    # 2 vCPU, 4GB RAM
+
+# Domain Configuration
+domain_name = "bici-dev.com"
+
+# SSH Configuration
+ssh_key_name = "your-ssh-key-name" # Name of SSH key in DigitalOcean
+
+# SSL Configuration (Cloudflare DNS)
+cloudflare_email  = "your-email@example.com"
+cloudflare_api_key = "your-cloudflare-api-key"
+letsencrypt_email = "your-email@example.com"
+
+# Odoo Configuration
+odoo_admin_password = "your-strong-admin-password"
+odoo_db_password    = "your-strong-db-password"
+
+# PgAdmin Configuration
+pgadmin_email    = "admin@example.com"
+pgadmin_password = "your-pgadmin-password"
+
+# Orbit Integration
+backend_url  = "https://messaging.bici-dev.com"
+frontend_url = "https://orbit.bici-dev.com"
+
+# SSO Configuration
+odoo_jwt_secret = "your-super-secret-jwt-key-change-this"
+
+# Git Repository
+github_repo   = "github.com:yourusername/odoo.git"
+github_branch = "main"
