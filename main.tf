@@ -104,6 +104,12 @@ variable "odoo_db_password" {
   sensitive   = true
 }
 
+variable "odoo_db_name" {
+  description = "Odoo database name to create automatically"
+  type        = string
+  default     = "odoo"
+}
+
 # Orbit Integration
 variable "backend_url" {
   description = "Backend URL for Orbit integration"
@@ -152,6 +158,7 @@ resource "aws_instance" "odoo" {
     # Odoo Configuration
     odoo_admin_password = var.odoo_admin_password
     odoo_db_password    = var.odoo_db_password
+    odoo_db_name        = var.odoo_db_name
     odoo_jwt_secret     = var.odoo_jwt_secret
 
     # Domain Configuration (combine subdomain + domain)

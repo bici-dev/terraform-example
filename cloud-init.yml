@@ -33,7 +33,7 @@ runcmd:
     ODOO_ADMIN_PASSWORD=${odoo_admin_password}
     ODOO_DB_USER=odoo
     ODOO_DB_PASSWORD=${odoo_db_password}
-    ODOO_DB_NAME=odoo
+    ODOO_DB_NAME=${odoo_db_name}
 
     # SSO Configuration
     ODOO_JWT_SECRET=${odoo_jwt_secret}
@@ -57,6 +57,22 @@ runcmd:
   # Start services
   - cd /root/odoo
   - docker-compose up -d
+
+  # Wait for Odoo to be ready
+  - sleep 30
+
+  # Automatically create Odoo database
+  - |
+    docker exec odoo-odoo-1 odoo \
+      --database=${odoo_db_name} \
+      --db_host=db \
+      --db_port=5432 \
+      --db_user=odoo \
+      --db_password=${odoo_db_password} \
+      --init=base \
+      --stop-after-init \
+      --without-demo=all \
+      --load-language=en_US
 
 # Write helper files
 write_files:
