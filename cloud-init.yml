@@ -62,36 +62,10 @@ runcmd:
   - sleep 30
 
   # Automatically create Odoo database
-  - |
-    docker exec odoo-odoo-1 odoo \
-      --database=${odoo_db_name} \
-      --db_host=db \
-      --db_port=5432 \
-      --db_user=odoo \
-      --db_password=${odoo_db_password} \
-      --init=base \
-      --stop-after-init \
-      --without-demo=all \
-      --load-language=en_US
+  - docker exec odoo-odoo-1 odoo --database=${odoo_db_name} --db_host=db --db_port=5432 --db_user=odoo --db_password=${odoo_db_password} --init=base --stop-after-init --without-demo=all --load-language=en_US
 
-  # Update admin email and password
-  - |
-    docker exec odoo-odoo-1 odoo shell \
-      --database=${odoo_db_name} \
-      --db_host=db \
-      --db_port=5432 \
-      --db_user=odoo \
-      --db_password=${odoo_db_password} \
-      --no-http \
-      << EOF
-admin = env['res.users'].browse(2)
-admin.write({'login': '${odoo_admin_email}', 'email': '${odoo_admin_email}', 'password': '${odoo_admin_password}'})
-env.cr.commit()
-EOF
-
-  # Restart Odoo to run with the new database
-  - cd /root/odoo
-  - docker-compose restart odoo
+  # Restart Odoo to use the new database
+  - docker-compose -f /root/odoo/docker-compose.yml restart odoo
 
 # Write helper files
 write_files:
