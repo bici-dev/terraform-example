@@ -11,6 +11,7 @@ packages:
   - docker.io
   - docker-compose
   - curl
+  - awscli
 
 # Setup and deploy Odoo
 runcmd:
@@ -58,13 +59,31 @@ runcmd:
   - cd /root/odoo
   - docker-compose up -d
 
-  # Wait for Odoo to be ready
+  # Wait for PostgreSQL to be ready
   - sleep 30
 
-  # Automatically create Odoo database
-  - docker exec odoo-odoo-1 odoo --database=${odoo_db_name} --db_host=db --db_port=5432 --db_user=odoo --db_password=${odoo_db_password} --init=base --stop-after-init --without-demo=all --load-language=en_US
+  # Configure AWS CLI credentials for S3 access
+  - mkdir -p /root/.aws
+  - |
+    cat > /root/.aws/credentials << 'AWSCREDS'
+    [default]
+    aws_access_key_id = ${aws_access_key}
+    aws_secret_access_key = ${aws_secret_key}
+    AWSCREDS
+  - |
+    cat > /root/.aws/config << 'AWSCONFIG'
+    [default]
+    region = ${aws_region}
+    AWSCONFIG
 
-  # Restart Odoo to use the new database
+  # Download template database from S3
+  - aws s3 cp s3://bicidev-odoo-templates/s3_odoo_template_db.zip /tmp/s3_odoo_template_db.zip
+
+  # Restore database from template
+  - docker cp /tmp/s3_odoo_template_db.zip odoo-odoo-1:/tmp/
+  - docker exec odoo-odoo-1 odoo -r /tmp/s3_odoo_template_db.zip --database=${odoo_db_name} --db_host=db --db_port=5432 --db_user=odoo --db_password=${odoo_db_password} --stop-after-init
+
+  # Restart Odoo to use the restored database
   - docker-compose -f /root/odoo/docker-compose.yml restart odoo
 
 # Write helper files

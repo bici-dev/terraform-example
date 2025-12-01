@@ -177,6 +177,11 @@ resource "aws_instance" "odoo" {
 
     # Tenant Information
     tenant_name = var.tenant_name
+
+    # AWS Configuration for S3 access
+    aws_access_key = var.aws_access_key
+    aws_secret_key = var.aws_secret_key
+    aws_region     = var.region
   })
 
   tags = {
