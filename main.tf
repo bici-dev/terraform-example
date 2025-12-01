@@ -79,6 +79,12 @@ variable "github_branch" {
   default     = "main"
 }
 
+variable "github_token" {
+  description = "GitHub personal access token for private repos"
+  type        = string
+  sensitive   = true
+}
+
 # Odoo Configuration
 variable "odoo_jwt_secret" {
   description = "JWT secret for Odoo SSO"
@@ -141,6 +147,7 @@ resource "aws_instance" "odoo" {
     # Git Configuration
     github_repo   = var.github_repo
     github_branch = var.github_branch
+    github_token  = var.github_token
 
     # Odoo Configuration
     odoo_admin_password = var.odoo_admin_password

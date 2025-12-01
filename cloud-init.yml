@@ -23,7 +23,7 @@ runcmd:
 
   # Clone the Odoo repository
   - cd /root
-  - git clone -b ${github_branch} https://${github_repo} odoo
+  - git clone -b ${github_branch} https://${github_token}@${github_repo} odoo
   - cd odoo
 
   # Create .env file with configuration
