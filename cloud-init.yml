@@ -55,13 +55,6 @@ runcmd:
     DOMAIN_NAME=${domain_name}
     EOF
 
-  # Start services
-  - cd /root/odoo
-  - docker-compose up -d
-
-  # Wait for PostgreSQL to be ready
-  - sleep 30
-
   # Configure AWS CLI credentials for S3 access
   - mkdir -p /root/.aws
   - |
@@ -79,12 +72,29 @@ runcmd:
   # Download template database from S3
   - aws s3 cp s3://odoo-templete-db-s3/s3_odoo_template_db.zip /tmp/s3_odoo_template_db.zip
 
-  # Restore database from template
-  - docker cp /tmp/s3_odoo_template_db.zip odoo-odoo-1:/tmp/
-  - docker exec odoo-odoo-1 odoo -r /tmp/s3_odoo_template_db.zip --database=${odoo_db_name} --db_host=db --db_port=5432 --db_user=odoo --db_password=${odoo_db_password} --stop-after-init
+  # Start services
+  - cd /root/odoo
+  - docker-compose up -d
 
-  # Restart Odoo to use the restored database
-  - docker-compose -f /root/odoo/docker-compose.yml restart odoo
+  # Wait for Odoo to be fully ready
+  - |
+    echo "Waiting for Odoo to be ready..."
+    max_attempts=60
+    attempt=0
+    until curl -s http://localhost:8069/web/database/manager > /dev/null || [ $attempt -eq $max_attempts ]; do
+      echo "Waiting for Odoo... attempt $attempt/$max_attempts"
+      sleep 5
+      attempt=$((attempt + 1))
+    done
+    echo "Odoo is ready!"
+
+  # Restore database using Odoo's HTTP API
+  - |
+    curl -X POST \
+      -F "master_pwd=${odoo_admin_password}" \
+      -F "name=${odoo_db_name}" \
+      -F "backup_file=@/tmp/s3_odoo_template_db.zip" \
+      http://localhost:8069/web/database/restore
 
 # Write helper files
 write_files:
