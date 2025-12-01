@@ -76,25 +76,32 @@ runcmd:
   - cd /root/odoo
   - docker-compose up -d
 
-  # Wait for Odoo to be fully ready
+  # Wait for Odoo to be fully ready (check from inside the container)
   - |
     echo "Waiting for Odoo to be ready..."
     max_attempts=60
     attempt=0
-    until curl -s http://localhost:8069/web/database/manager > /dev/null || [ $attempt -eq $max_attempts ]; do
+    until docker exec odoo-odoo-1 curl -s http://localhost:8069/web/database/manager > /dev/null 2>&1 || [ $attempt -eq $max_attempts ]; do
       echo "Waiting for Odoo... attempt $attempt/$max_attempts"
       sleep 5
       attempt=$((attempt + 1))
     done
     echo "Odoo is ready!"
 
-  # Restore database using Odoo's HTTP API
+  # Copy backup file into Odoo container
+  - docker cp /tmp/s3_odoo_template_db.zip odoo-odoo-1:/tmp/s3_odoo_template_db.zip
+
+  # Restore database using Odoo's HTTP API (from inside the container)
   - |
-    curl -X POST \
+    docker exec odoo-odoo-1 curl -X POST \
       -F "master_pwd=${odoo_admin_password}" \
       -F "name=${odoo_db_name}" \
       -F "backup_file=@/tmp/s3_odoo_template_db.zip" \
       http://localhost:8069/web/database/restore
+
+  # Fix nginx proxy issue automatically
+  - sleep 10
+  - docker-compose -f /root/odoo/docker-compose.yml up -d --force-recreate nginx
 
 # Write helper files
 write_files:
