@@ -98,6 +98,12 @@ variable "odoo_admin_password" {
   sensitive   = true
 }
 
+variable "odoo_admin_email" {
+  description = "Odoo admin email/login"
+  type        = string
+  default     = "admin@example.com"
+}
+
 variable "odoo_db_password" {
   description = "Odoo database password"
   type        = string
@@ -157,6 +163,7 @@ resource "aws_instance" "odoo" {
 
     # Odoo Configuration
     odoo_admin_password = var.odoo_admin_password
+    odoo_admin_email    = var.odoo_admin_email
     odoo_db_password    = var.odoo_db_password
     odoo_db_name        = var.odoo_db_name
     odoo_jwt_secret     = var.odoo_jwt_secret

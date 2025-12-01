@@ -69,10 +69,19 @@ runcmd:
       --db_port=5432 \
       --db_user=odoo \
       --db_password=${odoo_db_password} \
+      --admin-passwd=${odoo_admin_password} \
       --init=base \
       --stop-after-init \
       --without-demo=all \
       --load-language=en_US
+
+  # Update admin email
+  - |
+    docker exec odoo-db-1 psql -U odoo -d ${odoo_db_name} -c "UPDATE res_users SET login='${odoo_admin_email}', email='${odoo_admin_email}' WHERE id=2;"
+
+  # Restart Odoo to run with the new database
+  - cd /root/odoo
+  - docker-compose restart odoo
 
 # Write helper files
 write_files:
