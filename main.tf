@@ -149,7 +149,7 @@ variable "tenant_name" {
 # Odoo EC2 instance with cloud-init configuration
 resource "aws_instance" "odoo" {
   ami                    = var.ami_id
-  instance_type          = "t3.micro"
+  instance_type          = "t3.small"
   subnet_id              = aws_subnet.public.id
   vpc_security_group_ids = [aws_security_group.default.id]
   key_name               = var.ssh_key_name
