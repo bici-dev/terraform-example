@@ -171,6 +171,9 @@ resource "aws_instance" "odoo" {
     # Domain Configuration (combine subdomain + domain)
     domain_name = var.subdomain != "" ? "${var.subdomain}.${var.domain_name}" : var.domain_name
 
+    # Odoo Base URL (http for now, https when SSL is configured)
+    odoo_base_url = var.subdomain != "" ? "http://${var.subdomain}.${var.domain_name}" : "http://${var.domain_name}"
+
     # Orbit Integration
     backend_url  = var.backend_url
     frontend_url = var.frontend_url

@@ -39,7 +39,8 @@ runcmd:
     # SSO Configuration
     ODOO_JWT_SECRET=${odoo_jwt_secret}
 
-    # Odoo Public URL
+    # Odoo URLs
+    ODOO_BASE_URL=${odoo_base_url}
     ODOO_PUBLIC_URL=https://${domain_name}
 
     # Orbit Integration
