@@ -89,14 +89,14 @@ runcmd:
     echo "Odoo is ready!"
 
   # Copy backup file into Odoo container
-  - docker cp /tmp/s3_odoo_template_db.zip odoo-odoo-1:/tmp/s3_odoo_template_db.zip
+  - docker cp /tmp/odoo_template_03_12_25.zip odoo-odoo-1:/tmp/odoo_template_03_12_25.zip
 
   # Restore database using Odoo's HTTP API (from inside the container)
   - |
     docker exec odoo-odoo-1 curl -X POST \
       -F "master_pwd=${odoo_admin_password}" \
       -F "name=${odoo_db_name}" \
-      -F "backup_file=@/tmp/s3_odoo_template_db.zip" \
+      -F "backup_file=@/tmp/odoo_template_03_12_25.zip" \
       http://localhost:8069/web/database/restore
 
   # Fix nginx proxy issue automatically
