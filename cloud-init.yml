@@ -70,7 +70,7 @@ runcmd:
     AWSCONFIG
 
   # Download template database from S3
-  - aws s3 cp s3://odoo-templete-db-s3/s3_odoo_template_db.zip /tmp/s3_odoo_template_db.zip
+  - aws s3 cp s3://odoo-templete-db-s3/odoo_template_03_12_25.zip /tmp/odoo_template_03_12_25.zip
 
   # Start services
   - cd /root/odoo
