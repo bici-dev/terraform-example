@@ -10,6 +10,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.0"
+    }
   }
 }
 
@@ -20,6 +24,10 @@ provider "aws" {
   region     = var.region
   access_key = var.aws_access_key
   secret_key = var.aws_secret_key
+}
+
+provider "cloudflare" {
+  api_token = var.cloudflare_api_key
 }
 
 ###########################################
@@ -193,6 +201,19 @@ resource "aws_instance" "odoo" {
     Subdomain   = var.subdomain
     ManagedBy   = "Terraform"
   }
+}
+
+###########################################
+# Cloudflare DNS Record
+###########################################
+resource "cloudflare_record" "tenant_dns" {
+  zone_id = var.cloudflare_zone_id
+  name    = var.subdomain
+  type    = "A"
+  value   = aws_instance.odoo.public_ip
+  ttl     = 300
+  proxied = false # CRITICAL: must be false for Origin Certificates to work
+  comment = "Managed by Terraform for tenant ${var.tenant_name}"
 }
 
 ###########################################
