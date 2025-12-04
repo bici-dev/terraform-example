@@ -38,6 +38,7 @@ runcmd:
 
     # SSO Configuration
     ODOO_JWT_SECRET=${odoo_jwt_secret}
+    SSL_ENDPOINT_API_KEY=${ssl_endpoint_api_key}
 
     # Odoo URLs
     ODOO_BASE_URL=${odoo_base_url}

@@ -124,6 +124,12 @@ variable "odoo_db_name" {
   default     = "odoo"
 }
 
+variable "ssl_endpoint_api_key" {
+  description = "SSL endpoint API key for Odoo"
+  type        = string
+  sensitive   = true
+}
+
 # Orbit Integration
 variable "backend_url" {
   description = "Backend URL for Orbit integration"
@@ -175,6 +181,7 @@ resource "aws_instance" "odoo" {
     odoo_db_password    = var.odoo_db_password
     odoo_db_name        = var.odoo_db_name
     odoo_jwt_secret     = var.odoo_jwt_secret
+    ssl_endpoint_api_key = var.ssl_endpoint_api_key
 
     # Domain Configuration (combine subdomain + domain)
     domain_name = var.subdomain != "" ? "${var.subdomain}.${var.domain_name}" : var.domain_name
