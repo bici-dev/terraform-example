@@ -100,6 +100,12 @@ variable "odoo_jwt_secret" {
   sensitive   = true
 }
 
+variable "odoo_webhook_secret" {
+  description = "Webhook secret for Odoo integrations"
+  type        = string
+  sensitive   = true
+}
+
 variable "odoo_admin_password" {
   description = "Odoo admin password"
   type        = string
