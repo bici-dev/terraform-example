@@ -100,12 +100,6 @@ variable "odoo_jwt_secret" {
   sensitive   = true
 }
 
-variable "odoo_webhook_secret" {
-  description = "Webhook secret for Odoo integrations"
-  type        = string
-  sensitive   = true
-}
-
 variable "odoo_admin_password" {
   description = "Odoo admin password"
   type        = string
@@ -149,6 +143,12 @@ variable "frontend_url" {
 
 variable "orbit_webhook_secret" {
   description = "Shared secret for Orbit webhook validation"
+  type        = string
+  sensitive   = true
+}
+
+variable "odoo_webhook_secret" {
+  description = "Webhook secret for Odoo integrations (generated per-tenant)"
   type        = string
   sensitive   = true
 }
@@ -207,7 +207,7 @@ resource "aws_instance" "odoo" {
 
     # Orbit Webhook Configuration
     orbit_webhook_url    = "${var.backend_url}/webhooks/odoo-tenant-created"
-    orbit_webhook_secret = var.orbit_webhook_secret
+    orbit_webhook_secret = var.odoo_webhook_secret
 
     # Tenant Information
     tenant_name = var.tenant_name
