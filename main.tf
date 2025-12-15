@@ -141,12 +141,6 @@ variable "frontend_url" {
   type        = string
 }
 
-variable "orbit_webhook_secret" {
-  description = "Shared secret for Orbit webhook validation"
-  type        = string
-  sensitive   = true
-}
-
 variable "odoo_webhook_secret" {
   description = "Webhook secret for Odoo integrations (generated per-tenant)"
   type        = string
