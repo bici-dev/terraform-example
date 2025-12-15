@@ -141,6 +141,12 @@ variable "frontend_url" {
   type        = string
 }
 
+variable "orbit_webhook_secret" {
+  description = "Shared secret for Orbit webhook validation"
+  type        = string
+  sensitive   = true
+}
+
 # Tenant Information (Dynamic variables from Lambda)
 variable "domain_name" {
   description = "Base domain name"
@@ -192,6 +198,10 @@ resource "aws_instance" "odoo" {
     # Orbit Integration
     backend_url  = var.backend_url
     frontend_url = var.frontend_url
+
+    # Orbit Webhook Configuration
+    orbit_webhook_url    = "${var.backend_url}/webhooks/odoo-tenant-created"
+    orbit_webhook_secret = var.orbit_webhook_secret
 
     # Tenant Information
     tenant_name = var.tenant_name

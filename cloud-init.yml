@@ -12,6 +12,8 @@ packages:
   - docker-compose
   - curl
   - awscli
+  - python3-pip          # ✅ NUEVO: Para instalar odoorpc
+  - python3-requests     # ✅ NUEVO: Para hacer requests HTTP
 
 # Setup and deploy Odoo
 runcmd:
@@ -55,6 +57,11 @@ runcmd:
 
     # Domain Configuration
     DOMAIN_NAME=${domain_name}
+
+    # ✅ NUEVO: Orbit Webhook Configuration
+    ORBIT_WEBHOOK_URL=${orbit_webhook_url}
+    ORBIT_WEBHOOK_SECRET=${orbit_webhook_secret}
+    TENANT_NAME=${tenant_name}
     EOF
 
   # Configure AWS CLI credentials for S3 access
@@ -105,6 +112,41 @@ runcmd:
   - sleep 10
   - docker-compose -f /root/odoo/docker-compose.yml up -d --force-recreate nginx
 
+  # ✅ NUEVO: Install odoorpc in the Odoo container
+  - echo "📦 Installing odoorpc in Odoo container..."
+  - docker exec odoo-odoo-1 pip3 install odoorpc
+
+  # ✅ NUEVO: Setup Orbit Integration
+  - echo "🔧 Setting up Orbit integration..."
+  - |
+    # Load environment variables
+    source /root/odoo/.env
+
+    # Export variables for Python script
+    export ODOO_DB_NAME="${odoo_db_name}"
+    export ODOO_ADMIN_PASSWORD="${odoo_admin_password}"
+    export TENANT_NAME="${tenant_name}"
+    export ODOO_PUBLIC_URL="https://${domain_name}"
+    export ORBIT_WEBHOOK_URL="${orbit_webhook_url}"
+    export ORBIT_WEBHOOK_SECRET="${orbit_webhook_secret}"
+
+    # Wait extra time to ensure DB is fully restored and accessible
+    echo "⏳ Waiting for database to be fully ready..."
+    sleep 20
+
+    # Execute Orbit setup script
+    echo "🚀 Executing Orbit integration setup..."
+    python3 /root/setup_orbit_integration.py > /var/log/orbit-setup.log 2>&1
+
+    # Check result
+    if [ $? -eq 0 ]; then
+      echo "✅ Orbit integration setup completed successfully"
+      echo "📋 Check details: /var/log/orbit-setup.log"
+    else
+      echo "❌ Orbit integration setup failed"
+      echo "📋 Check errors: /var/log/orbit-setup.log"
+    fi
+
 # Write helper files
 write_files:
   - path: /root/odoo-info.txt
@@ -117,6 +159,90 @@ write_files:
 
       Check status: docker-compose -f /root/odoo/docker-compose.yml ps
       View logs: docker-compose -f /root/odoo/docker-compose.yml logs -f
+      Orbit setup log: cat /var/log/orbit-setup.log
+
+  # ✅ NUEVO: Python script for Orbit Integration setup
+  - path: /root/setup_orbit_integration.py
+    permissions: '0755'
+    content: |
+      #!/usr/bin/env python3
+      import odoorpc
+      import requests
+      import sys
+      import os
+      import time
+
+      print("\n" + "="*60)
+      print("  ORBIT INTEGRATION SETUP")
+      print("="*60 + "\n")
+
+      # Validate environment variables
+      required_vars = ['ODOO_DB_NAME', 'ODOO_ADMIN_PASSWORD', 'TENANT_NAME',
+                       'ODOO_PUBLIC_URL', 'ORBIT_WEBHOOK_URL', 'ORBIT_WEBHOOK_SECRET']
+      missing = [v for v in required_vars if not os.environ.get(v)]
+
+      if missing:
+          print(f"❌ Missing environment variables: {', '.join(missing)}")
+          sys.exit(1)
+
+      odoo_db = os.environ['ODOO_DB_NAME']
+      odoo_password = os.environ['ODOO_ADMIN_PASSWORD']
+      tenant_name = os.environ['TENANT_NAME']
+      odoo_url = os.environ['ODOO_PUBLIC_URL']
+      webhook_url = os.environ['ORBIT_WEBHOOK_URL']
+      webhook_secret = os.environ['ORBIT_WEBHOOK_SECRET']
+
+      try:
+          # Connect to Odoo
+          print(f"📡 Connecting to Odoo (DB: {odoo_db})...")
+          odoo = odoorpc.ODOO('localhost', protocol='http', port=8069)
+          odoo.login(odoo_db, 'admin', odoo_password)
+          print("✅ Connected to Odoo")
+
+          # Create API Key
+          print("🔑 Creating API Key...")
+          ApiKey = odoo.env['res.users.apikeys']
+          existing = ApiKey.search([('name', '=', 'Orbit Integration'), ('user_id', '=', 2)])
+
+          if existing:
+              api_key = ApiKey.browse(existing[0]).key
+              print(f"✅ Found existing API Key: {api_key[:15]}...")
+          else:
+              key_id = ApiKey.create({'name': 'Orbit Integration', 'user_id': 2})
+              api_key = ApiKey.browse(key_id).key
+              print(f"✅ Created new API Key: {api_key[:15]}...")
+
+          # Send webhook
+          print(f"📤 Sending webhook to Orbit...")
+          response = requests.post(
+              webhook_url,
+              json={
+                  'tenant_name': tenant_name,
+                  'rex_url': odoo_url,
+                  'database': odoo_db,
+                  'api_key': api_key,
+                  'webhook_secret': webhook_secret
+              },
+              timeout=30
+          )
+          response.raise_for_status()
+
+          print(f"✅ Webhook sent successfully: {response.status_code}")
+          print("\n" + "="*60)
+          print("  SETUP COMPLETED SUCCESSFULLY")
+          print("="*60)
+          print(f"✅ Tenant: {tenant_name}")
+          print(f"✅ URL: {odoo_url}")
+          print(f"✅ Database: {odoo_db}")
+          print(f"✅ API Key: {api_key[:15]}...")
+          print("\n🎉 Orbit integration is ready!\n")
+          sys.exit(0)
+
+      except Exception as e:
+          print(f"\n❌ ERROR: {e}")
+          import traceback
+          traceback.print_exc()
+          sys.exit(1)
 
 final_message: |
   ============================================
