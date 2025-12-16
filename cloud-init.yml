@@ -146,7 +146,7 @@ runcmd:
       fi
       echo "Waiting for Odoo API... attempt $$attempt/$$max_attempts (HTTP $$http_code)"
       sleep 5
-      attempt=$$((attempt + 1))
+      attempt=$(($$attempt + 1))
     done
 
     if [ $$attempt -eq $$max_attempts ]; then
