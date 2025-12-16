@@ -118,7 +118,7 @@ runcmd:
 
   # ✅ NUEVO: Install odoorpc on host for the setup script
   - echo "📦 Installing odoorpc on host..."
-  - pip3 install --break-system-packages odoorpc
+  - pip3 install odoorpc
 
   # ✅ NUEVO: Setup Orbit Integration
   - echo "🔧 Setting up Orbit integration..."
