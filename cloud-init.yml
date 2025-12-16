@@ -196,7 +196,7 @@ write_files:
       try:
           # Connect to Odoo
           print(f"📡 Connecting to Odoo (DB: {odoo_db})...")
-          odoo = odoorpc.ODOO('localhost', protocol='http', port=8069)
+          odoo = odoorpc.ODOO('localhost', protocol='jsonrpc', port=8069)
           odoo.login(odoo_db, 'admin', odoo_password)
           print("✅ Connected to Odoo")
 
