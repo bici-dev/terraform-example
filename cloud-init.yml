@@ -131,9 +131,25 @@ runcmd:
     export ORBIT_WEBHOOK_URL="${orbit_webhook_url}"
     export ORBIT_WEBHOOK_SECRET="${orbit_webhook_secret}"
 
-    # Wait extra time to ensure DB is fully restored and accessible
-    echo "⏳ Waiting for database to be fully ready..."
-    sleep 20
+    # Wait for Odoo API to be ready and accepting connections
+    echo "⏳ Waiting for Odoo API to be ready..."
+    max_attempts=60
+    attempt=0
+    while [ $attempt -lt $max_attempts ]; do
+      if curl -s http://localhost:8069/web/database/selector > /dev/null 2>&1; then
+        echo "✅ Odoo API is ready!"
+        sleep 5  # Extra 5 seconds to ensure DB is fully accessible
+        break
+      fi
+      echo "Waiting for Odoo API... attempt $attempt/$max_attempts"
+      sleep 5
+      attempt=$((attempt + 1))
+    done
+
+    if [ $attempt -eq $max_attempts ]; then
+      echo "❌ Timeout waiting for Odoo API"
+      exit 1
+    fi
 
     # Execute Orbit setup script
     echo "🚀 Executing Orbit integration setup..."
