@@ -114,14 +114,13 @@ runcmd:
 
   # ✅ NUEVO: Install odoorpc in the Odoo container
   - echo "📦 Installing odoorpc in Odoo container..."
-  - docker exec odoo-odoo-1 pip3 install odoorpc
+  - docker exec odoo-odoo-1 pip3 install --break-system-packages odoorpc
 
   # ✅ NUEVO: Setup Orbit Integration
   - echo "🔧 Setting up Orbit integration..."
   - |
-    #!/bin/bash
     # Load environment variables
-    source /root/odoo/.env
+    . /root/odoo/.env
 
     # Export variables for Python script
     export ODOO_DB_NAME="${odoo_db_name}"
