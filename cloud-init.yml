@@ -116,6 +116,10 @@ runcmd:
   - echo "📦 Installing odoorpc in Odoo container..."
   - docker exec odoo-odoo-1 pip3 install --break-system-packages odoorpc
 
+  # ✅ NUEVO: Install odoorpc on host for the setup script
+  - echo "📦 Installing odoorpc on host..."
+  - pip3 install --break-system-packages odoorpc
+
   # ✅ NUEVO: Setup Orbit Integration
   - echo "🔧 Setting up Orbit integration..."
   - |
