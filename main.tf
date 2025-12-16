@@ -174,6 +174,13 @@ resource "aws_instance" "odoo" {
   vpc_security_group_ids = [aws_security_group.default.id]
   key_name               = var.ssh_key_name
 
+  # Root volume configuration - increase size for Docker images
+  root_block_device {
+    volume_size           = 20  # GB (increased from default 8GB)
+    volume_type           = "gp3"
+    delete_on_termination = true
+  }
+
   # Cloud-init configuration with variable substitution
   user_data = templatefile("${path.module}/cloud-init.yml", {
     # Git Configuration
@@ -227,7 +234,7 @@ resource "cloudflare_record" "tenant_dns" {
   zone_id = var.cloudflare_zone_id
   name    = var.subdomain
   type    = "A"
-  value   = aws_instance.odoo.public_ip
+  content   = aws_instance.odoo.public_ip
   ttl     = 300
   proxied = false # CRITICAL: must be false for Origin Certificates to work
   comment = "Managed by Terraform for tenant ${var.tenant_name}"

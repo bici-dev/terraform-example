@@ -119,6 +119,7 @@ runcmd:
   # ✅ NUEVO: Setup Orbit Integration
   - echo "🔧 Setting up Orbit integration..."
   - |
+    #!/bin/bash
     # Load environment variables
     source /root/odoo/.env
 
