@@ -126,6 +126,7 @@ runcmd:
     # Export variables for Python script directly (don't source .env to avoid parsing issues)
     export ODOO_DB_NAME="${odoo_db_name}"
     export ODOO_ADMIN_PASSWORD="${odoo_admin_password}"
+    export ODOO_ADMIN_EMAIL="${odoo_admin_email}"
     export TENANT_NAME="${tenant_name}"
     export ODOO_PUBLIC_URL="https://${domain_name}"
     export ORBIT_WEBHOOK_URL="${orbit_webhook_url}"
@@ -136,12 +137,14 @@ runcmd:
     max_attempts=60
     attempt=0
     while [ $attempt -lt $max_attempts ]; do
-      if curl -s http://localhost:8069/web/database/selector > /dev/null 2>&1; then
-        echo "✅ Odoo API is ready!"
+      # Check if Odoo is responding (any 2xx or 3xx response is good)
+      http_code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8069/ 2>/dev/null)
+      if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 400 ]; then
+        echo "✅ Odoo API is ready (HTTP $http_code)!"
         sleep 5  # Extra 5 seconds to ensure DB is fully accessible
         break
       fi
-      echo "Waiting for Odoo API... attempt $attempt/$max_attempts"
+      echo "Waiting for Odoo API... attempt $attempt/$max_attempts (HTTP $http_code)"
       sleep 5
       attempt=$((attempt + 1))
     done
@@ -187,14 +190,14 @@ write_files:
       import requests
       import sys
       import os
-      import time
+      import subprocess
 
       print("\n" + "="*60)
       print("  ORBIT INTEGRATION SETUP")
       print("="*60 + "\n")
 
       # Validate environment variables
-      required_vars = ['ODOO_DB_NAME', 'ODOO_ADMIN_PASSWORD', 'TENANT_NAME',
+      required_vars = ['ODOO_DB_NAME', 'ODOO_ADMIN_PASSWORD', 'ODOO_ADMIN_EMAIL', 'TENANT_NAME',
                        'ODOO_PUBLIC_URL', 'ORBIT_WEBHOOK_URL', 'ORBIT_WEBHOOK_SECRET']
       missing = [v for v in required_vars if not os.environ.get(v)]
 
@@ -204,6 +207,7 @@ write_files:
 
       odoo_db = os.environ['ODOO_DB_NAME']
       odoo_password = os.environ['ODOO_ADMIN_PASSWORD']
+      admin_email = os.environ['ODOO_ADMIN_EMAIL']
       tenant_name = os.environ['TENANT_NAME']
       odoo_url = os.environ['ODOO_PUBLIC_URL']
       webhook_url = os.environ['ORBIT_WEBHOOK_URL']
@@ -213,21 +217,35 @@ write_files:
           # Connect to Odoo
           print(f"📡 Connecting to Odoo (DB: {odoo_db})...")
           odoo = odoorpc.ODOO('localhost', protocol='jsonrpc', port=8069)
-          odoo.login(odoo_db, 'admin', odoo_password)
-          print("✅ Connected to Odoo")
+          odoo.login(odoo_db, admin_email, odoo_password)
+          print(f"✅ Connected to Odoo as {admin_email} (UID: {odoo.env.uid})")
 
           # Create API Key
           print("🔑 Creating API Key...")
           ApiKey = odoo.env['res.users.apikeys']
-          existing = ApiKey.search([('name', '=', 'Orbit Integration'), ('user_id', '=', 2)])
+          existing = ApiKey.search([('name', '=', 'Orbit Integration'), ('user_id', '=', odoo.env.uid)])
 
           if existing:
-              api_key = ApiKey.browse(existing[0]).key
-              print(f"✅ Found existing API Key: {api_key[:15]}...")
+              print(f"✅ Found existing API Key (ID: {existing[0]})")
+              # Get key from database (key field is not readable via API for security)
+              result = subprocess.run(
+                  ['docker', 'exec', 'odoo-db-1', 'psql', '-U', 'odoo', '-d', odoo_db, '-t', '-c',
+                   f"SELECT key FROM res_users_apikeys WHERE id = {existing[0]};"],
+                  capture_output=True, text=True, check=True
+              )
+              api_key = result.stdout.strip()
           else:
-              key_id = ApiKey.create({'name': 'Orbit Integration', 'user_id': 2})
-              api_key = ApiKey.browse(key_id).key
-              print(f"✅ Created new API Key: {api_key[:15]}...")
+              # Create new key via API (respects Odoo permissions and validations)
+              key_id = ApiKey.create({'name': 'Orbit Integration', 'user_id': odoo.env.uid})
+              print(f"✅ Created new API Key (ID: {key_id})")
+
+              # Get key from database
+              result = subprocess.run(
+                  ['docker', 'exec', 'odoo-db-1', 'psql', '-U', 'odoo', '-d', odoo_db, '-t', '-c',
+                   f"SELECT key FROM res_users_apikeys WHERE id = {key_id};"],
+                  capture_output=True, text=True, check=True
+              )
+              api_key = result.stdout.strip()
 
           # Send webhook
           print(f"📤 Sending webhook to Orbit...")
@@ -235,7 +253,7 @@ write_files:
               webhook_url,
               json={
                   'tenant_name': tenant_name,
-                  'rex_url': odoo_url,
+                  'odoo_url': odoo_url,
                   'database': odoo_db,
                   'api_key': api_key,
                   'webhook_secret': webhook_secret
@@ -255,6 +273,11 @@ write_files:
           print("\n🎉 Orbit integration is ready!\n")
           sys.exit(0)
 
+      except subprocess.CalledProcessError as e:
+          print(f"\n❌ Database error: {e}")
+          if e.stderr:
+              print(f"Stderr: {e.stderr}")
+          sys.exit(1)
       except Exception as e:
           print(f"\n❌ ERROR: {e}")
           import traceback
