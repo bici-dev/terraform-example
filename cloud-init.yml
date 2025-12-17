@@ -163,7 +163,16 @@ runcmd:
 
     # Execute Orbit setup script
     echo "🚀 Executing Orbit integration setup..."
-    python3 /root/setup_orbit_integration.py > /var/log/orbit-setup.log 2>&1
+    # Copy script into container and execute it there (where localhost:8069 works)
+    docker cp /root/setup_orbit_integration.py odoo-odoo-1:/tmp/setup_orbit_integration.py
+    docker exec -e ODOO_DB_NAME="$ODOO_DB_NAME" \
+                -e ODOO_ADMIN_PASSWORD="$ODOO_ADMIN_PASSWORD" \
+                -e ODOO_ADMIN_EMAIL="$ODOO_ADMIN_EMAIL" \
+                -e TENANT_NAME="$TENANT_NAME" \
+                -e ODOO_PUBLIC_URL="$ODOO_PUBLIC_URL" \
+                -e ORBIT_WEBHOOK_URL="$ORBIT_WEBHOOK_URL" \
+                -e ORBIT_WEBHOOK_SECRET="$ORBIT_WEBHOOK_SECRET" \
+                odoo-odoo-1 python3 /tmp/setup_orbit_integration.py > /var/log/orbit-setup.log 2>&1
 
     # Check result
     if [ $? -eq 0 ]; then
