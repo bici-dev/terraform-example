@@ -146,7 +146,7 @@ runcmd:
         http://localhost:8069/jsonrpc 2>/dev/null)
 
       # Check if authentication succeeded (returns a user ID, not false)
-      if echo "$response" | grep -q '"result":[0-9]'; then
+      if echo "$response" | grep -q '"result": [0-9]'; then
         echo "✅ Odoo authentication successful! Database is ready."
         sleep 5
         break
