@@ -34,6 +34,7 @@ runcmd:
     cat > /root/odoo/.env << 'EOF'
     # Odoo Configuration
     ODOO_ADMIN_PASSWORD=${odoo_admin_password}
+    ODOO_ADMIN_EMAIL=${odoo_admin_email}
     ODOO_DB_USER=odoo
     ODOO_DB_PASSWORD=${odoo_db_password}
     ODOO_DB_NAME=${odoo_db_name}
