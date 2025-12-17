@@ -136,20 +136,20 @@ runcmd:
     echo "⏳ Waiting for Odoo API to be ready..."
     max_attempts=60
     attempt=0
-    while [ $$attempt -lt $$max_attempts ]; do
+    while [ $attempt -lt $max_attempts ]; do
       # Check if Odoo is responding (any 2xx or 3xx response is good)
-      http_code=$$(curl -s -o /dev/null -w "%%{http_code}" http://localhost:8069/ 2>/dev/null)
-      if [ "$$http_code" -ge 200 ] && [ "$$http_code" -lt 400 ]; then
-        echo "✅ Odoo API is ready (HTTP $$http_code)!"
+      http_code=$(curl -s -o /dev/null -w "%%{http_code}" http://localhost:8069/ 2>/dev/null)
+      if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 400 ]; then
+        echo "✅ Odoo API is ready (HTTP $http_code)!"
         sleep 5  # Extra 5 seconds to ensure DB is fully accessible
         break
       fi
-      echo "Waiting for Odoo API... attempt $$attempt/$$max_attempts (HTTP $$http_code)"
+      echo "Waiting for Odoo API... attempt $attempt/$max_attempts (HTTP $http_code)"
       sleep 5
-      attempt=$(($$attempt + 1))
+      attempt=$((attempt + 1))
     done
 
-    if [ $$attempt -eq $$max_attempts ]; then
+    if [ $attempt -eq $max_attempts ]; then
       echo "❌ Timeout waiting for Odoo API"
       exit 1
     fi
