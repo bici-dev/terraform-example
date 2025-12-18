@@ -207,8 +207,7 @@ resource "aws_instance" "odoo" {
     frontend_url = var.frontend_url
 
     # Orbit Webhook Configuration
-    orbit_webhook_url    = "${var.backend_url}/odoo-webhook/tenant-register
-"
+    orbit_webhook_url    = "${var.backend_url}/odoo-webhook/tenant-register"
     orbit_webhook_secret = var.odoo_webhook_secret
 
     # Tenant Information
