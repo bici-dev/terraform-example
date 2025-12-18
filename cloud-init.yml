@@ -59,13 +59,16 @@ runcmd:
     # Domain Configuration
     DOMAIN_NAME=${domain_name}
 
-    # ✅ NUEVO: Orbit Webhook Configuration
+    # Nginx Mode (production uses SSL)
+    MODE=production
+
+    # Orbit Webhook Configuration
     ORBIT_WEBHOOK_URL=${orbit_webhook_url}
     ORBIT_WEBHOOK_SECRET=${orbit_webhook_secret}
     TENANT_NAME=${tenant_name}
     EOF
 
-  # Configure AWS CLI credentials for S3 access
+  # Configure AWS CLI credentials for S3 and Secrets Manager access
   - mkdir -p /root/.aws
   - |
     cat > /root/.aws/credentials << 'AWSCREDS'
@@ -81,6 +84,23 @@ runcmd:
 
   # Download template database from S3
   - aws s3 cp s3://odoo-templete-db-s3/odoo_template_03_12_25.zip /tmp/odoo_template_03_12_25.zip
+
+  # Fetch SSL certificates from AWS Secrets Manager (Cloudflare Origin Certificates)
+  - echo "🔐 Fetching SSL certificates from AWS Secrets Manager..."
+  - mkdir -p /root/odoo/nginx/ssl
+  - |
+    aws secretsmanager get-secret-value \
+      --secret-id "${ssl_cert_secret_name}" \
+      --query SecretString \
+      --output text > /root/odoo/nginx/ssl/cloudflare_origin.crt
+  - |
+    aws secretsmanager get-secret-value \
+      --secret-id "${ssl_key_secret_name}" \
+      --query SecretString \
+      --output text > /root/odoo/nginx/ssl/cloudflare_origin.key
+  - chmod 600 /root/odoo/nginx/ssl/cloudflare_origin.key
+  - chmod 644 /root/odoo/nginx/ssl/cloudflare_origin.crt
+  - echo "✅ SSL certificates fetched and stored in /root/odoo/nginx/ssl/"
 
   # Start services
   - cd /root/odoo

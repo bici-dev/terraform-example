@@ -147,6 +147,19 @@ variable "odoo_webhook_secret" {
   sensitive   = true
 }
 
+# SSL Configuration (Cloudflare Origin Certificates)
+variable "ssl_cert_secret_name" {
+  description = "AWS Secrets Manager secret name for wildcard SSL certificate"
+  type        = string
+  default     = "/orbit/ssl/wildcard-cert"
+}
+
+variable "ssl_key_secret_name" {
+  description = "AWS Secrets Manager secret name for wildcard SSL private key"
+  type        = string
+  default     = "/orbit/ssl/wildcard-key"
+}
+
 # Tenant Information (Dynamic variables from Lambda)
 variable "domain_name" {
   description = "Base domain name"
@@ -189,18 +202,18 @@ resource "aws_instance" "odoo" {
     github_token  = var.github_token
 
     # Odoo Configuration
-    odoo_admin_password = var.odoo_admin_password
-    odoo_admin_email    = var.odoo_admin_email
-    odoo_db_password    = var.odoo_db_password
-    odoo_db_name        = var.odoo_db_name
-    odoo_jwt_secret     = var.odoo_jwt_secret
+    odoo_admin_password  = var.odoo_admin_password
+    odoo_admin_email     = var.odoo_admin_email
+    odoo_db_password     = var.odoo_db_password
+    odoo_db_name         = var.odoo_db_name
+    odoo_jwt_secret      = var.odoo_jwt_secret
     ssl_endpoint_api_key = var.ssl_endpoint_api_key
 
     # Domain Configuration (combine subdomain + domain)
     domain_name = var.subdomain != "" ? "${var.subdomain}.${var.domain_name}" : var.domain_name
 
-    # Odoo Base URL (http for now, https when SSL is configured)
-    odoo_base_url = var.subdomain != "" ? "http://${var.subdomain}.${var.domain_name}" : "http://${var.domain_name}"
+    # Odoo Base URL (https with Cloudflare Origin Certificates)
+    odoo_base_url = var.subdomain != "" ? "https://${var.subdomain}.${var.domain_name}" : "https://${var.domain_name}"
 
     # Orbit Integration
     backend_url  = var.backend_url
@@ -213,10 +226,14 @@ resource "aws_instance" "odoo" {
     # Tenant Information
     tenant_name = var.tenant_name
 
-    # AWS Configuration for S3 access
+    # AWS Configuration for S3 access and Secrets Manager
     aws_access_key = var.aws_access_key
     aws_secret_key = var.aws_secret_key
     aws_region     = var.region
+
+    # SSL Configuration (Cloudflare Origin Certificates)
+    ssl_cert_secret_name = var.ssl_cert_secret_name
+    ssl_key_secret_name  = var.ssl_key_secret_name
   })
 
   tags = {
@@ -234,9 +251,9 @@ resource "cloudflare_record" "tenant_dns" {
   zone_id = var.cloudflare_zone_id
   name    = var.subdomain
   type    = "A"
-  content   = aws_instance.odoo.public_ip
-  ttl     = 300
-  proxied = false # CRITICAL: must be false for Origin Certificates to work
+  content = aws_instance.odoo.public_ip
+  ttl     = 1 # Auto TTL when proxied
+  proxied = true # Enable Cloudflare proxy for SSL/TLS
   comment = "Managed by Terraform for tenant ${var.tenant_name}"
 }
 
